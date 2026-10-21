@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pembukuan Bata Bolong</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#e9e7e2;--surface:#f6f5f2;--ink:#23262b;--mute:#6b6f76;--line:#cfcdc6;--accent:#a8412c;--accent-ink:#fff;--ok:#2f6b4a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1e22;--surface:#26292e;--ink:#ecebe7;--mute:#9a9ea5;--line:#3a3e45;--accent:#d2634b;--accent-ink:#1c1e22;--ok:#6fbf92}}
+:root[data-theme="dark"]{--bg:#1c1e22;--surface:#26292e;--ink:#ecebe7;--mute:#9a9ea5;--line:#3a3e45;--accent:#d2634b;--accent-ink:#1c1e22;--ok:#6fbf92}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 Archivo,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:26px;font-weight:800;margin:0 0 2px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 18px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.sum div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.sum small{display:block;color:var(--mute);font-size:12px}
+.sum b{font-size:18px;font-weight:800}
+.sum .pay b{color:var(--accent)}
+form{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:8px}
+label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:4px}
+input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:9px 10px;width:100%;min-width:0}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.prev{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--mute)}
+.prev b{color:var(--ink)}
+.prev .pay b{color:var(--accent)}
+button{font:inherit;font-weight:600;border:0;border-radius:4px;padding:10px 16px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+button.ghost{background:transparent;color:var(--mute);border:1px solid var(--line);padding:6px 10px;font-weight:400;font-size:13px}
+.actions{grid-column:1/-1;display:flex;gap:8px}
+.wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-top:18px}
+table{border-collapse:collapse;width:100%;min-width:820px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:nth-child(-n+2),td:nth-child(-n+2){text-align:left}
+th{font-size:13px;font-weight:600;color:var(--mute)}
+td.pay{font-weight:800;color:var(--accent)}
+tfoot td{font-weight:800;border-bottom:0;background:var(--bg)}
+td.empty{text-align:center;color:var(--mute);padding:28px;white-space:normal}
+.neg{color:var(--accent)}
+td.gain,.gain b{font-weight:800;color:var(--ok)}
+.sum .gain b{color:var(--ok)}
+td.gain.neg{color:var(--accent)}
+td:last-child,th:last-child{position:sticky;right:0;background:var(--surface);box-shadow:-1px 0 0 var(--line)}
+tfoot td:last-child{background:var(--bg)}
+button[data-d]{color:var(--accent);border-color:var(--accent)}
+tbody td:last-child,thead th:last-child{position:sticky;right:0;background:var(--surface);box-shadow:-6px 0 6px -6px var(--line)}
+button.ghost[data-d]{color:var(--accent);border-color:var(--accent)}
+tbody td:last-child,thead th:last-child{position:sticky;right:0;background:var(--surface);box-shadow:-6px 0 6px -6px var(--line)}
+tfoot td:last-child{position:sticky;right:0;background:var(--bg)}
+td.empty{position:static!important;box-shadow:none!important}
+.sum .gain{grid-column:1/-1;background:#ffe066;border-color:#d9b800}
+.sum .gain small,.sum .gain b{color:#3a2f00}
+.prev .gain{flex:1 1 100%;background:#ffe066;color:#3a2f00;padding:8px 12px;border-radius:4px;font-weight:600}
+.prev .gain b{color:#3a2f00}
+td.gain,thead th:nth-last-child(2),tfoot td:nth-last-child(2){background:#ffe066;color:#3a2f00}
+thead th:nth-last-child(2){font-weight:800}
+td.gain.neg{color:#9b1c1c}
+:root{--yel:#ffd93d;--yel-ink:#2b2200;--yel-neg:#9c1c0a}
+.sum .gain{grid-column:1/-1;background:var(--yel);border-color:#e0b800}
+.sum .gain small{color:var(--yel-ink)}
+.sum .gain b{color:var(--yel-ink);font-size:22px}
+tbody td.gain,tfoot td:nth-child(10),thead th:nth-child(10){background:var(--yel);color:var(--yel-ink)}
+tbody td.gain.neg{color:var(--yel-neg)}
+.sum .gain{grid-column:1/-1;background:#ffe45c;border-color:#e0c200}
+.sum .gain small{color:#4a4300}
+.sum .gain b{color:#23262b;font-size:22px}
+.prev .gain{flex-basis:100%;background:#ffe45c;color:#23262b;padding:8px 10px;border-radius:4px}
+.prev .gain b{color:#23262b}
+th.gain-h,td.gain{background:#ffe45c;color:#23262b;min-width:200px}
+th.gain-h{color:#4a4300}
+th.gain-h,td.gain{text-align:center}
+th.gain-h,td.gain{text-align:center}
+td.gain.neg{color:#9b1c1c}
+.sum .gain,.prev .gain{text-align:center}
+.sum .gain small{text-align:center}
+td:last-child,th:last-child,tbody td:last-child,thead th:last-child,tfoot td:last-child{position:static;box-shadow:none;background:transparent}
+tfoot td:last-child{background:var(--bg)}
+button.icon{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+button.icon.sure{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>Pembukuan Bata Bolong</h1>
+<p class="sub">Catat tiap pesanan. Hitungan total dan bayar ke produsen dan biaya operasional otomatis.</p>
+
+<section class="sum" aria-label="Ringkasan">
+  <div><small>Jumlah pesanan</small><b id="sCount">0</b></div>
+  <div><small>Total bata (biji)</small><b id="sQty">0</b></div>
+  <div><small>Total pembayaran</small><b id="sTotal">Rp0</b></div>
+  <div class="pay"><small>Total bayar ke produsen dan biaya operasional</small><b id="sPay">Rp0</b></div>
+  <div class="gain"><small>Total keuntungan</small><b id="sProfit">Rp0</b></div>
+</section>
+
+<form id="f" autocomplete="off">
+  <label>Tanggal<input type="date" id="tgl" required></label>
+  <label>Nama pembeli<input type="text" id="nama" required placeholder="mis. Pak Slamet"></label>
+  <label>Jumlah pesanan (biji)<input type="number" id="qty" min="1" inputmode="numeric" required></label>
+  <label>Harga jual (Rp/biji)<input type="number" id="harga" min="0" inputmode="numeric" required></label>
+  <label>Harga beli (Rp/biji)<input type="number" id="beli" min="0" inputmode="numeric" value="0"></label>
+  <label>Ongkos kirim (Rp)<input type="number" id="kirim" min="0" inputmode="numeric" value="0"></label>
+  <label>Ongkos kuli (Rp)<input type="number" id="kuli" min="0" inputmode="numeric" value="0"></label>
+  <div class="prev">
+    <span>Total pembayaran: <b id="pTotal">Rp0</b></span>
+    <span class="pay">Bayar ke produsen dan biaya operasional: <b id="pPay">Rp0</b></span>
+    <span class="gain">Keuntungan: <b id="pProfit">Rp0</b></span>
+  </div>
+  <div class="actions">
+    <button type="submit" id="save">Simpan pesanan</button>
+    <button type="button" class="ghost" id="cancel" hidden>Batal ubah</button>
+  </div>
+</form>
+
+<div class="wrap">
+<table>
+  <thead><tr>
+    <th>Tanggal</th><th>Nama pembeli</th><th>Jumlah</th><th>Harga jual</th><th>Harga beli</th><th>Total pembayaran</th><th>Ongkos kirim</th><th>Ongkos kuli</th><th>Bayar ke produsen dan biaya operasional</th><th class="gain-h">Keuntungan</th><th></th>
+  </tr></thead>
+  <tbody id="rows"></tbody>
+  <tfoot id="foot"></tfoot>
+</table>
+</div>
+</main>
+
+<script>
+(function(){
+var KEY="pembukuan-bata-bolong", data=[], editId=null;
+var $=function(i){return document.getElementById(i)};
+var rp=function(n){return (n<0?"-":"")+"Rp"+Math.abs(Math.round(n)).toLocaleString("id-ID")};
+var num=function(i){return parseFloat($(i).value)||0};
+var ic=function(p){return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'};
+var I_E=ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>');
+var I_D=ic('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>');
+var I_OK=ic('<path d="M5 12l5 5 9-10"/>');
+
+function load(){try{var s=localStorage.getItem(KEY);data=s?JSON.parse(s):[]}catch(e){data=[]}if(!Array.isArray(data))data=[]}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+function calc(r){var total=r.qty*r.harga;var profit=total-(r.beli||0)*r.qty-r.kirim-r.kuli;return{total:total,pay:total-profit,profit:profit}}
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+function tgl(s){if(!s)return"";var p=s.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s}
+
+function preview(){var t=num("qty")*num("harga");$("pTotal").textContent=rp(t);var g=t-num("beli")*num("qty")-num("kirim")-num("kuli");$("pPay").textContent=rp(t-g);$("pProfit").textContent=rp(g)}
+
+function render(){
+  var rows=data.slice().sort(function(a,b){return a.tgl<b.tgl?1:a.tgl>b.tgl?-1:b.id-a.id});
+  var h="",tq=0,tt=0,tp=0,tg=0,tk=0,tu=0;
+  rows.forEach(function(r){
+    var c=calc(r);tq+=r.qty;tt+=c.total;tp+=c.pay;tg+=c.profit;tk+=r.kirim;tu+=r.kuli;
+    h+="<tr><td>"+tgl(r.tgl)+"</td><td>"+esc(r.nama)+"</td><td>"+r.qty.toLocaleString("id-ID")+"</td><td>"+rp(r.harga)+"</td><td>"+rp(r.beli||0)+"</td><td>"+rp(c.total)+"</td><td>"+rp(r.kirim)+"</td><td>"+rp(r.kuli)+"</td><td class='pay"+(c.pay<0?" neg":"")+"'>"+rp(c.pay)+"</td><td class='gain"+(c.profit<0?" neg":"")+"'>"+rp(c.profit)+"</td><td><button class='ghost icon' data-e='"+r.id+"' aria-label='Ubah' title='Ubah'>"+I_E+"</button> <button class='ghost icon' data-d='"+r.id+"' aria-label='Hapus' title='Hapus'>"+I_D+"</button></td></tr>";
+  });
+  $("rows").innerHTML=h||"<tr><td class='empty' colspan='11'>Belum ada pesanan. Isi formulir di atas lalu simpan.</td></tr>";
+  $("foot").innerHTML=rows.length?"<tr><td colspan='2'>Total</td><td>"+tq.toLocaleString("id-ID")+"</td><td></td><td></td><td>"+rp(tt)+"</td><td>"+rp(tk)+"</td><td>"+rp(tu)+"</td><td>"+rp(tp)+"</td><td class='gain'>"+rp(tg)+"</td><td></td></tr>":"";
+  $("sCount").textContent=rows.length;$("sQty").textContent=tq.toLocaleString("id-ID");$("sTotal").textContent=rp(tt);$("sPay").textContent=rp(tp);$("sProfit").textContent=rp(tg);
+}
+
+function reset(){
+  editId=null;$("f").reset();$("kirim").value=0;$("kuli").value=0;
+  $("tgl").value=new Date().toISOString().slice(0,10);
+  $("save").textContent="Simpan pesanan";$("cancel").hidden=true;preview();
+}
+
+$("f").addEventListener("input",preview);
+$("f").addEventListener("submit",function(e){
+  e.preventDefault();
+  var r={id:editId||Date.now(),tgl:$("tgl").value,nama:$("nama").value.trim(),qty:num("qty"),harga:num("harga"),beli:num("beli"),kirim:num("kirim"),kuli:num("kuli")};
+  if(!r.nama||r.qty<=0)return;
+  if(editId){data=data.map(function(x){return x.id===editId?r:x})}else{data.push(r)}
+  persist();render();reset();
+});
+$("cancel").addEventListener("click",reset);
+$("rows").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.dataset.d){
+    var id=+b.dataset.d;
+    if(b.dataset.sure){data=data.filter(function(x){return x.id!==id});persist();render();return}
+    b.dataset.sure="1";b.innerHTML=I_OK;b.classList.add("sure");b.title="Tekan lagi untuk menghapus";
+    setTimeout(function(){if(b.isConnected){delete b.dataset.sure;b.innerHTML=I_D;b.classList.remove("sure");b.title="Hapus"}},3000);
+  }else if(b.dataset.e){
+    var r=data.filter(function(x){return x.id===+b.dataset.e})[0];if(!r)return;
+    editId=r.id;$("tgl").value=r.tgl;$("nama").value=r.nama;$("qty").value=r.qty;$("harga").value=r.harga;$("beli").value=r.beli||0;$("kirim").value=r.kirim;$("kuli").value=r.kuli;
+    $("save").textContent="Simpan perubahan";$("cancel").hidden=false;preview();
+    $("f").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+});
+
+load();render();reset();
+})();
+</script>
+</body>
+</html>
