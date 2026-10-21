@@ -62,7 +62,7 @@ td.gain.neg{color:#9b1c1c}
 .sum .gain{grid-column:1/-1;background:var(--yel);border-color:#e0b800}
 .sum .gain small{color:var(--yel-ink)}
 .sum .gain b{color:var(--yel-ink);font-size:22px}
-tbody td.gain,tfoot td:nth-child(10),thead th:nth-child(10){background:var(--yel);color:var(--yel-ink)}
+tbody td.gain,tfoot td:nth-child(11),thead th:nth-child(11){background:var(--yel);color:var(--yel-ink)}
 tbody td.gain.neg{color:var(--yel-neg)}
 .sum .gain{grid-column:1/-1;background:#ffe45c;border-color:#e0c200}
 .sum .gain small{color:#4a4300}
@@ -80,6 +80,9 @@ td:last-child,th:last-child,tbody td:last-child,thead th:last-child,tfoot td:las
 tfoot td:last-child{background:var(--bg)}
 button.icon{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 button.icon.sure{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+th:nth-child(3),tbody td:nth-child(3){text-align:left}
+tbody td.addr{white-space:normal;min-width:180px}
+tfoot td:nth-child(2){text-align:right}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -99,11 +102,12 @@ button.icon.sure{background:var(--accent);color:var(--accent-ink);border-color:v
 <form id="f" autocomplete="off">
   <label>Tanggal<input type="date" id="tgl" required></label>
   <label>Nama pembeli<input type="text" id="nama" required placeholder="mis. Pak Slamet"></label>
+  <label>Alamat<input type="text" id="alamat" placeholder="mis. Desa Sukamaju, RT 02"></label>
   <label>Jumlah pesanan (biji)<input type="number" id="qty" min="1" inputmode="numeric" required></label>
   <label>Harga jual (Rp/biji)<input type="number" id="harga" min="0" inputmode="numeric" required></label>
-  <label>Harga beli (Rp/biji)<input type="number" id="beli" min="0" inputmode="numeric" value="0"></label>
-  <label>Ongkos kirim (Rp)<input type="number" id="kirim" min="0" inputmode="numeric" value="0"></label>
-  <label>Ongkos kuli (Rp)<input type="number" id="kuli" min="0" inputmode="numeric" value="0"></label>
+  <label>Harga beli (Rp/biji)<input type="number" id="beli" min="0" inputmode="numeric"></label>
+  <label>Ongkos kirim (Rp)<input type="number" id="kirim" min="0" inputmode="numeric"></label>
+  <label>Ongkos kuli (Rp)<input type="number" id="kuli" min="0" inputmode="numeric"></label>
   <div class="prev">
     <span>Total pembayaran: <b id="pTotal">Rp0</b></span>
     <span class="pay">Bayar ke produsen dan biaya operasional: <b id="pPay">Rp0</b></span>
@@ -118,7 +122,7 @@ button.icon.sure{background:var(--accent);color:var(--accent-ink);border-color:v
 <div class="wrap">
 <table>
   <thead><tr>
-    <th>Tanggal</th><th>Nama pembeli</th><th>Jumlah</th><th>Harga jual</th><th>Harga beli</th><th>Total pembayaran</th><th>Ongkos kirim</th><th>Ongkos kuli</th><th>Bayar ke produsen dan biaya operasional</th><th class="gain-h">Keuntungan</th><th></th>
+    <th>Tanggal</th><th>Nama pembeli</th><th>Alamat</th><th>Jumlah</th><th>Harga jual</th><th>Harga beli</th><th>Total pembayaran</th><th>Ongkos kirim</th><th>Ongkos kuli</th><th>Bayar ke produsen dan biaya operasional</th><th class="gain-h">Keuntungan</th><th></th>
   </tr></thead>
   <tbody id="rows"></tbody>
   <tfoot id="foot"></tfoot>
@@ -150,15 +154,15 @@ function render(){
   var h="",tq=0,tt=0,tp=0,tg=0,tk=0,tu=0;
   rows.forEach(function(r){
     var c=calc(r);tq+=r.qty;tt+=c.total;tp+=c.pay;tg+=c.profit;tk+=r.kirim;tu+=r.kuli;
-    h+="<tr><td>"+tgl(r.tgl)+"</td><td>"+esc(r.nama)+"</td><td>"+r.qty.toLocaleString("id-ID")+"</td><td>"+rp(r.harga)+"</td><td>"+rp(r.beli||0)+"</td><td>"+rp(c.total)+"</td><td>"+rp(r.kirim)+"</td><td>"+rp(r.kuli)+"</td><td class='pay"+(c.pay<0?" neg":"")+"'>"+rp(c.pay)+"</td><td class='gain"+(c.profit<0?" neg":"")+"'>"+rp(c.profit)+"</td><td><button class='ghost icon' data-e='"+r.id+"' aria-label='Ubah' title='Ubah'>"+I_E+"</button> <button class='ghost icon' data-d='"+r.id+"' aria-label='Hapus' title='Hapus'>"+I_D+"</button></td></tr>";
+    h+="<tr><td>"+tgl(r.tgl)+"</td><td>"+esc(r.nama)+"</td><td class='addr'>"+esc(r.alamat||"")+"</td><td>"+r.qty.toLocaleString("id-ID")+"</td><td>"+rp(r.harga)+"</td><td>"+rp(r.beli||0)+"</td><td>"+rp(c.total)+"</td><td>"+rp(r.kirim)+"</td><td>"+rp(r.kuli)+"</td><td class='pay"+(c.pay<0?" neg":"")+"'>"+rp(c.pay)+"</td><td class='gain"+(c.profit<0?" neg":"")+"'>"+rp(c.profit)+"</td><td><button class='ghost icon' data-e='"+r.id+"' aria-label='Ubah' title='Ubah'>"+I_E+"</button> <button class='ghost icon' data-d='"+r.id+"' aria-label='Hapus' title='Hapus'>"+I_D+"</button></td></tr>";
   });
-  $("rows").innerHTML=h||"<tr><td class='empty' colspan='11'>Belum ada pesanan. Isi formulir di atas lalu simpan.</td></tr>";
-  $("foot").innerHTML=rows.length?"<tr><td colspan='2'>Total</td><td>"+tq.toLocaleString("id-ID")+"</td><td></td><td></td><td>"+rp(tt)+"</td><td>"+rp(tk)+"</td><td>"+rp(tu)+"</td><td>"+rp(tp)+"</td><td class='gain'>"+rp(tg)+"</td><td></td></tr>":"";
+  $("rows").innerHTML=h||"<tr><td class='empty' colspan='12'>Belum ada pesanan. Isi formulir di atas lalu simpan.</td></tr>";
+  $("foot").innerHTML=rows.length?"<tr><td colspan='3'>Total</td><td>"+tq.toLocaleString("id-ID")+"</td><td></td><td></td><td>"+rp(tt)+"</td><td>"+rp(tk)+"</td><td>"+rp(tu)+"</td><td>"+rp(tp)+"</td><td class='gain'>"+rp(tg)+"</td><td></td></tr>":"";
   $("sCount").textContent=rows.length;$("sQty").textContent=tq.toLocaleString("id-ID");$("sTotal").textContent=rp(tt);$("sPay").textContent=rp(tp);$("sProfit").textContent=rp(tg);
 }
 
 function reset(){
-  editId=null;$("f").reset();$("kirim").value=0;$("kuli").value=0;
+  editId=null;$("f").reset();
   $("tgl").value=new Date().toISOString().slice(0,10);
   $("save").textContent="Simpan pesanan";$("cancel").hidden=true;preview();
 }
@@ -166,7 +170,7 @@ function reset(){
 $("f").addEventListener("input",preview);
 $("f").addEventListener("submit",function(e){
   e.preventDefault();
-  var r={id:editId||Date.now(),tgl:$("tgl").value,nama:$("nama").value.trim(),qty:num("qty"),harga:num("harga"),beli:num("beli"),kirim:num("kirim"),kuli:num("kuli")};
+  var r={id:editId||Date.now(),tgl:$("tgl").value,nama:$("nama").value.trim(),alamat:$("alamat").value.trim(),qty:num("qty"),harga:num("harga"),beli:num("beli"),kirim:num("kirim"),kuli:num("kuli")};
   if(!r.nama||r.qty<=0)return;
   if(editId){data=data.map(function(x){return x.id===editId?r:x})}else{data.push(r)}
   persist();render();reset();
@@ -181,7 +185,7 @@ $("rows").addEventListener("click",function(e){
     setTimeout(function(){if(b.isConnected){delete b.dataset.sure;b.innerHTML=I_D;b.classList.remove("sure");b.title="Hapus"}},3000);
   }else if(b.dataset.e){
     var r=data.filter(function(x){return x.id===+b.dataset.e})[0];if(!r)return;
-    editId=r.id;$("tgl").value=r.tgl;$("nama").value=r.nama;$("qty").value=r.qty;$("harga").value=r.harga;$("beli").value=r.beli||0;$("kirim").value=r.kirim;$("kuli").value=r.kuli;
+    editId=r.id;$("tgl").value=r.tgl;$("nama").value=r.nama;$("alamat").value=r.alamat||"";$("qty").value=r.qty;$("harga").value=r.harga;$("beli").value=r.beli||"";$("kirim").value=r.kirim||"";$("kuli").value=r.kuli||"";
     $("save").textContent="Simpan perubahan";$("cancel").hidden=false;preview();
     $("f").scrollIntoView({behavior:"smooth",block:"start"});
   }
