@@ -120,6 +120,7 @@ tfoot td:nth-child(2){text-align:right}
 </form>
 
 <div class="wrap">
+  <button id="btnUnduh" type="button">Unduh data (CSV)</button>
 <table>
   <thead><tr>
     <th>Tanggal</th><th>Nama pembeli</th><th>Alamat</th><th>Jumlah</th><th>Harga jual</th><th>Harga beli</th><th>Total pembayaran</th><th>Ongkos kirim</th><th>Ongkos kuli</th><th>Bayar ke produsen dan biaya operasional</th><th class="gain-h">Keuntungan</th><th></th>
@@ -194,5 +195,36 @@ $("rows").addEventListener("click",function(e){
 load();render();reset();
 })();
 </script>
+
+  <script>
+document.getElementById('btnUnduh').addEventListener('click', function () {
+  const tabel = document.querySelector('table');
+  if (!tabel) return;
+
+  const baris = Array.from(tabel.querySelectorAll('tr')).map(tr => {
+    const sel = Array.from(tr.children);
+    sel.pop(); // buang kolom terakhir (tombol hapus/aksi)
+    return sel
+      .map(td => '"' + td.innerText.trim().replace(/"/g, '""') + '"')
+      .join(',');
+  });
+
+  if (baris.length <= 1) {
+    alert('Belum ada data untuk diunduh.');
+    return;
+  }
+
+  const csv = '\uFEFF' + baris.join('\r\n'); // \uFEFF agar Excel membaca UTF-8
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pembukuan-bata-bolong-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+});
+</script>
+  
 </body>
 </html>
