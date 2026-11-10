@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pembukuan Bata Bolong</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 :root{--bg:#e9e7e2;--surface:#f6f5f2;--ink:#23262b;--mute:#6b6f76;--line:#cfcdc6;--accent:#a8412c;--accent-ink:#fff;--ok:#2f6b4a;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -83,6 +86,20 @@ button.icon.sure{background:var(--accent);color:var(--accent-ink);border-color:v
 th:nth-child(3),tbody td:nth-child(3){text-align:left}
 tbody td.addr{white-space:normal;min-width:180px}
 tfoot td:nth-child(2){text-align:right}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px}
+.bar h2{font-size:16px;font-weight:800;margin:0}
+.bar+.wrap{margin-top:8px}
+button.dl{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--accent);border:1px solid var(--accent);padding:8px 14px;font-size:14px}
+button.dl:hover{background:var(--accent);color:var(--accent-ink)}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px;color:var(--mute);font-size:13px}
+.pager button{padding:6px 12px}
+.pager button:disabled{opacity:.4;cursor:default}
+.login{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;display:grid;gap:10px;max-width:380px;margin:0 auto 8px}
+.login h2{margin:0;font-size:17px}
+.login .err{color:var(--accent);font-size:13px;min-height:18px;margin:0}
+.status{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:13px;color:var(--mute);margin-bottom:14px}
+.status .sp{flex:1}
+.status button{padding:5px 10px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -90,6 +107,21 @@ tfoot td:nth-child(2){text-align:right}
 <main>
 <h1>Pembukuan Bata Bolong</h1>
 <p class="sub">Catat tiap pesanan. Hitungan total dan bayar ke produsen dan biaya operasional otomatis.</p>
+
+<form class="login" id="loginForm" hidden>
+  <h2>Masuk</h2>
+  <label>Email<input type="email" id="lemail" required autocomplete="username"></label>
+  <label>Kata sandi<input type="password" id="lpass" required autocomplete="current-password"></label>
+  <p class="err" id="loginErr" role="alert"></p>
+  <button type="submit">Masuk</button>
+</form>
+
+<div id="app">
+<div class="status" id="status" hidden>
+  <span id="who"></span><span id="sync"></span><span class="sp"></span>
+  <button type="button" class="ghost" id="legacyBtn" hidden></button>
+  <button type="button" class="ghost" id="logout">Keluar</button>
+</div>
 
 <section class="sum" aria-label="Ringkasan">
   <div><small>Jumlah pesanan</small><b id="sCount">0</b></div>
@@ -119,8 +151,14 @@ tfoot td:nth-child(2){text-align:right}
   </div>
 </form>
 
+<div class="bar">
+  <h2>Daftar pesanan</h2>
+  <button id="btnUnduh" type="button" class="dl">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+    Unduh data (CSV)
+  </button>
+</div>
 <div class="wrap">
-  <button id="btnUnduh" type="button">Unduh data (CSV)</button>
 <table>
   <thead><tr>
     <th>Tanggal</th><th>Nama pembeli</th><th>Alamat</th><th>Jumlah</th><th>Harga jual</th><th>Harga beli</th><th>Total pembayaran</th><th>Ongkos kirim</th><th>Ongkos kuli</th><th>Bayar ke produsen dan biaya operasional</th><th class="gain-h">Keuntungan</th><th></th>
@@ -129,11 +167,24 @@ tfoot td:nth-child(2){text-align:right}
   <tfoot id="foot"></tfoot>
 </table>
 </div>
+<div class="pager" id="pager" hidden>
+  <button type="button" class="ghost" id="prevBtn">&lsaquo; Sebelumnya</button>
+  <span id="pageInfo"></span>
+  <button type="button" class="ghost" id="nextBtn">Berikutnya &rsaquo;</button>
+</div>
+</div>
 </main>
 
 <script>
 (function(){
-var KEY="pembukuan-bata-bolong", data=[], editId=null;
+// ===== ISI DENGAN KONFIGURASI FIREBASE ANDA =====
+var FB_CONFIG={apiKey:"ISI_API_KEY",authDomain:"ISI_PROJECT.firebaseapp.com",projectId:"ISI_PROJECT",appId:"ISI_APP_ID"};
+// ================================================
+var KEY="pembukuan-bata-bolong", data=[], editId=null, page=1, PER=10;
+var configured=FB_CONFIG.apiKey.indexOf("ISI_")!==0;
+var cloud=configured&&typeof firebase!=="undefined";
+var auth,db,col,unsub;
+function fail(e){alert("Gagal menyimpan ke online: "+((e&&(e.code||e.message))||e))}
 var $=function(i){return document.getElementById(i)};
 var rp=function(n){return (n<0?"-":"")+"Rp"+Math.abs(Math.round(n)).toLocaleString("id-ID")};
 var num=function(i){return parseFloat($(i).value)||0};
@@ -143,6 +194,45 @@ var I_D=ic('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"
 var I_OK=ic('<path d="M5 12l5 5 9-10"/>');
 
 function load(){try{var s=localStorage.getItem(KEY);data=s?JSON.parse(s):[]}catch(e){data=[]}if(!Array.isArray(data))data=[]}
+function legacyList(){try{var s=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(s)?s:[]}catch(e){return[]}}
+function checkLegacy(){
+  var ids={};data.forEach(function(d){ids[d.id]=1});
+  var done=false;try{done=localStorage.getItem(KEY+"-uploaded")==="1"}catch(e){}
+  var n=done?0:legacyList().filter(function(x){return x&&x.id&&!ids[x.id]}).length;
+  $("legacyBtn").hidden=!n;$("legacyBtn").textContent="Unggah "+n+" pesanan lama dari HP ini";
+}
+function initCloud(){
+  firebase.initializeApp(FB_CONFIG);auth=firebase.auth();db=firebase.firestore();
+  $("app").hidden=true;
+  auth.onAuthStateChanged(function(u){
+    if(unsub){unsub();unsub=null}
+    if(u){
+      $("loginForm").hidden=true;$("app").hidden=false;$("status").hidden=false;
+      $("who").textContent=u.email;$("sync").textContent="· menyinkronkan…";
+      col=db.collection("users").doc(u.uid).collection("orders");
+      unsub=col.onSnapshot(function(sn){
+        data=sn.docs.map(function(d){return d.data()});
+        $("sync").textContent="· tersinkron";render();checkLegacy();
+      },function(err){$("sync").textContent="· gagal sinkron ("+err.code+")"});
+    }else{
+      col=null;data=[];$("app").hidden=true;$("loginForm").hidden=false;render();
+    }
+  });
+  $("loginForm").addEventListener("submit",function(e){
+    e.preventDefault();$("loginErr").textContent="";
+    auth.signInWithEmailAndPassword($("lemail").value.trim(),$("lpass").value).catch(function(){$("loginErr").textContent="Email atau kata sandi salah."});
+  });
+  $("logout").addEventListener("click",function(){auth.signOut()});
+  $("legacyBtn").addEventListener("click",function(){
+    var ids={};data.forEach(function(d){ids[d.id]=1});
+    var list=legacyList().filter(function(x){return x&&x.id&&!ids[x.id]});
+    var jobs=[];
+    for(var i=0;i<list.length;i+=400){
+      var b=db.batch();list.slice(i,i+400).forEach(function(x){b.set(col.doc(String(x.id)),x)});jobs.push(b.commit());
+    }
+    Promise.all(jobs).then(function(){try{localStorage.setItem(KEY+"-uploaded","1")}catch(e){}checkLegacy()}).catch(fail);
+  });
+}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
 function calc(r){var total=r.qty*r.harga;var profit=total-(r.beli||0)*r.qty-r.kirim-r.kuli;return{total:total,pay:total-profit,profit:profit}}
 function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
@@ -153,12 +243,18 @@ function preview(){var t=num("qty")*num("harga");$("pTotal").textContent=rp(t);v
 function render(){
   var rows=data.slice().sort(function(a,b){return a.tgl<b.tgl?1:a.tgl>b.tgl?-1:b.id-a.id});
   var h="",tq=0,tt=0,tp=0,tg=0,tk=0,tu=0;
-  rows.forEach(function(r){
+  var pages=Math.max(1,Math.ceil(rows.length/PER));
+  if(page>pages)page=pages;if(page<1)page=1;
+  rows.forEach(function(r,i){
     var c=calc(r);tq+=r.qty;tt+=c.total;tp+=c.pay;tg+=c.profit;tk+=r.kirim;tu+=r.kuli;
+    if(i<(page-1)*PER||i>=page*PER)return;
     h+="<tr><td>"+tgl(r.tgl)+"</td><td>"+esc(r.nama)+"</td><td class='addr'>"+esc(r.alamat||"")+"</td><td>"+r.qty.toLocaleString("id-ID")+"</td><td>"+rp(r.harga)+"</td><td>"+rp(r.beli||0)+"</td><td>"+rp(c.total)+"</td><td>"+rp(r.kirim)+"</td><td>"+rp(r.kuli)+"</td><td class='pay"+(c.pay<0?" neg":"")+"'>"+rp(c.pay)+"</td><td class='gain"+(c.profit<0?" neg":"")+"'>"+rp(c.profit)+"</td><td><button class='ghost icon' data-e='"+r.id+"' aria-label='Ubah' title='Ubah'>"+I_E+"</button> <button class='ghost icon' data-d='"+r.id+"' aria-label='Hapus' title='Hapus'>"+I_D+"</button></td></tr>";
   });
   $("rows").innerHTML=h||"<tr><td class='empty' colspan='12'>Belum ada pesanan. Isi formulir di atas lalu simpan.</td></tr>";
   $("foot").innerHTML=rows.length?"<tr><td colspan='3'>Total</td><td>"+tq.toLocaleString("id-ID")+"</td><td></td><td></td><td>"+rp(tt)+"</td><td>"+rp(tk)+"</td><td>"+rp(tu)+"</td><td>"+rp(tp)+"</td><td class='gain'>"+rp(tg)+"</td><td></td></tr>":"";
+  $("pager").hidden=rows.length<=PER;
+  $("pageInfo").textContent="Halaman "+page+" / "+pages+" ("+rows.length+" pesanan)";
+  $("prevBtn").disabled=page<=1;$("nextBtn").disabled=page>=pages;
   $("sCount").textContent=rows.length;$("sQty").textContent=tq.toLocaleString("id-ID");$("sTotal").textContent=rp(tt);$("sPay").textContent=rp(tp);$("sProfit").textContent=rp(tg);
 }
 
@@ -173,15 +269,19 @@ $("f").addEventListener("submit",function(e){
   e.preventDefault();
   var r={id:editId||Date.now(),tgl:$("tgl").value,nama:$("nama").value.trim(),alamat:$("alamat").value.trim(),qty:num("qty"),harga:num("harga"),beli:num("beli"),kirim:num("kirim"),kuli:num("kuli")};
   if(!r.nama||r.qty<=0)return;
-  if(editId){data=data.map(function(x){return x.id===editId?r:x})}else{data.push(r)}
-  persist();render();reset();
+  if(!editId)page=1;
+  if(cloud){col.doc(String(r.id)).set(r).catch(fail)}
+  else{if(editId){data=data.map(function(x){return x.id===editId?r:x})}else{data.push(r)}persist();render()}
+  reset();
 });
 $("cancel").addEventListener("click",reset);
+$("prevBtn").addEventListener("click",function(){page--;render()});
+$("nextBtn").addEventListener("click",function(){page++;render()});
 $("rows").addEventListener("click",function(e){
   var b=e.target.closest("button");if(!b)return;
   if(b.dataset.d){
     var id=+b.dataset.d;
-    if(b.dataset.sure){data=data.filter(function(x){return x.id!==id});persist();render();return}
+    if(b.dataset.sure){if(cloud){col.doc(String(id)).delete().catch(fail)}else{data=data.filter(function(x){return x.id!==id});persist();render()}return}
     b.dataset.sure="1";b.innerHTML=I_OK;b.classList.add("sure");b.title="Tekan lagi untuk menghapus";
     setTimeout(function(){if(b.isConnected){delete b.dataset.sure;b.innerHTML=I_D;b.classList.remove("sure");b.title="Hapus"}},3000);
   }else if(b.dataset.e){
@@ -192,39 +292,28 @@ $("rows").addEventListener("click",function(e){
   }
 });
 
-load();render();reset();
+$("btnUnduh").addEventListener("click",function(){
+  if(!data.length){alert("Belum ada data untuk diunduh.");return}
+  var q=function(v){return '"'+String(v).replace(/"/g,'""')+'"'};
+  var head=["Tanggal","Nama pembeli","Alamat","Jumlah","Harga jual","Harga beli","Total pembayaran","Ongkos kirim","Ongkos kuli","Bayar ke produsen dan biaya operasional","Keuntungan"];
+  var rows=data.slice().sort(function(a,b){return a.tgl<b.tgl?1:a.tgl>b.tgl?-1:b.id-a.id});
+  var out=[head.map(q).join(",")],tq=0,tt=0,tk=0,tu=0,tp=0,tg=0;
+  rows.forEach(function(r){var c=calc(r);tq+=r.qty;tt+=c.total;tk+=r.kirim;tu+=r.kuli;tp+=c.pay;tg+=c.profit;
+    out.push([tgl(r.tgl),r.nama,r.alamat||"",r.qty.toLocaleString("id-ID"),rp(r.harga),rp(r.beli||0),rp(c.total),rp(r.kirim),rp(r.kuli),rp(c.pay),rp(c.profit)].map(q).join(","))});
+  out.push(["Total","","",tq.toLocaleString("id-ID"),"","",rp(tt),rp(tk),rp(tu),rp(tp),rp(tg)].map(q).join(","));
+  var blob=new Blob(["\uFEFF"+out.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="pembukuan-bata-bolong-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+});
+
+if(configured&&!cloud){alert("Gagal memuat Firebase. Periksa koneksi internet lalu muat ulang halaman.")}
+if(cloud){initCloud()}else{load()}
+render();reset();
 })();
 </script>
 
-  <script>
-document.getElementById('btnUnduh').addEventListener('click', function () {
-  const tabel = document.querySelector('table');
-  if (!tabel) return;
 
-  const baris = Array.from(tabel.querySelectorAll('tr')).map(tr => {
-    const sel = Array.from(tr.children);
-    sel.pop(); // buang kolom terakhir (tombol hapus/aksi)
-    return sel
-      .map(td => '"' + td.innerText.trim().replace(/"/g, '""') + '"')
-      .join(',');
-  });
-
-  if (baris.length <= 1) {
-    alert('Belum ada data untuk diunduh.');
-    return;
-  }
-
-  const csv = '\uFEFF' + baris.join('\r\n'); // \uFEFF agar Excel membaca UTF-8
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'pembukuan-bata-bolong-' + new Date().toISOString().slice(0, 10) + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(a.href);
-});
-</script>
   
 </body>
 </html>
